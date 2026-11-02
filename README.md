@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # FindIt - Smart Campus Lost & Found
 
 A responsive student-project prototype using HTML5, CSS3, vanilla JavaScript, and a separate beginner-friendly C99 module. No frameworks, backend, accounts, or authentication.
@@ -66,3 +67,6 @@ This command is a future integration example, not a required setup step or a tes
 
 
 // "C:\Users\91828\OneDrive\Desktop\News Website\start.ps1" -SkipBuild -Port 8080
+=======
+# find-it
+>>>>>>> 61405373fa59d18c17b82cf747eb3e7f01600337
