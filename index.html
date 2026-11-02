@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10223b" />
+    <meta
+      name="description"
+      content="FindIt is your campus lost and found. Report, discover, and reconnect with the things that matter."
+    />
+    <title>FindIt | Your Campus Lost & Found</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <script defer src="script.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="campus-strip">
+      <div class="container">
+        <span
+          ><span class="live-dot"></span> A little help. A stronger
+          campus.</span
+        ><span
+          >Made for our campus community
+          <span aria-hidden="true">&#8599;</span></span
+        >
+      </div>
+    </div>
+    <header class="site-header">
+      <div class="container nav-wrap">
+        <a href="#home" class="brand" aria-label="FindIt home"
+          ><span class="brand-mark" data-icon="scan-search"></span>FindIt<span
+            class="brand-dot"
+            >.</span
+          ></a
+        >
+        <button
+          class="icon-button mobile-menu"
+          id="menu-toggle"
+          aria-label="Open navigation"
+          aria-expanded="false"
+        >
+          <span data-icon="menu"></span>
+        </button>
+        <nav aria-label="Main navigation" id="navigation">
+          <a href="#home" data-nav="home">Home</a
+          ><a href="#browse" data-nav="browse">Browse items</a
+          ><a href="#about" data-nav="about">How it works</a>
+        </nav>
+        <a href="#lost" class="button primary nav-report"
+          ><span data-icon="plus"></span> Report an item</a
+        >
+      </div>
+    </header>
+    <main id="main" tabindex="-1">
+      <div id="connection-notice" class="container connection-notice" role="alert" hidden>
+        <span id="connection-message"></span>
+        <button id="retry-connection" class="button secondary" type="button">Retry connection</button>
+        <a id="local-server-link" class="text-link" href="http://127.0.0.1:8080" hidden>Open local portal</a>
+      </div>
+      <section id="home-view" class="view">
+        <section class="hero">
+          <img
+            class="hero-photo"
+            src="https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=2200&q=85"
+            alt="Bookshelves and study spaces inside a university library"
+            fetchpriority="high"
+          />
+          <div class="hero-shade"></div>
+          <div class="container hero-content">
+            <span class="eyebrow hero-eyebrow"
+              ><span class="live-dot"></span> YOUR CAMPUS. YOUR COMMUNITY.</span
+            >
+            <h1>Lost Something?<br />Let's <span>Find It.</span></h1>
+            <p>
+              Your college's lost &amp; found, all in one place.<br />Bringing lost
+              belongings back where they belong.
+            </p>
+            <form id="hero-search" class="hero-search" role="search">
+              <span data-icon="search"></span
+              ><input
+                id="hero-query"
+                name="query"
+                aria-label="Search for a lost item"
+                placeholder="What are you looking for?"
+              /><button class="button primary" type="submit">
+                Find my item <span data-icon="arrow-right"></span>
+              </button>
+            </form>
+            <div class="hero-actions">
+              <a href="#lost" class="button light"
+                ><span data-icon="search"></span> Report Lost Item</a
+              ><a href="#found" class="button outline-light"
+                ><span data-icon="package-check"></span> Report Found Item</a
+              >
+            </div>
+            <div class="hero-note">
+              <span data-icon="heart-handshake"></span> A small act of kindness
+              can make someone's day.
+            </div>
+          </div>
+          <div class="hero-caption">
+            <span data-icon="map-pin"></span> Lost on campus. Found by
+            community.
+          </div>
+        </section>
+        <section class="stats-band" aria-label="Campus item statistics">
+          <div class="container stats-layout">
+            <div class="stats-intro">
+              <span class="eyebrow">EVERY ITEM HAS A STORY</span>
+              <h2>Let's give it a happy ending.</h2>
+            </div>
+            <div class="stat">
+              <span class="stat-icon blue" data-icon="layers"></span>
+              <div>
+                <strong data-stat="total">0</strong><span>Items reported</span>
+              </div>
+            </div>
+            <div class="stat">
+              <span class="stat-icon amber" data-icon="package-check"></span>
+              <div>
+                <strong data-stat="found">0</strong><span>Items found</span>
+              </div>
+            </div>
+            <div class="stat">
+              <span class="stat-icon green" data-icon="heart-handshake"></span>
+              <div>
+                <strong data-stat="returned">0</strong
+                ><span>Happy reunions</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="container listings-section">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">THE CAMPUS NOTICEBOARD</span>
+              <h2>Recently reported items<span class="heading-dot">.</span></h2>
+              <p>Something look familiar? It might be yours.</p>
+            </div>
+            <a href="#browse" class="text-link"
+              >View all items <span data-icon="arrow-up-right"></span
+            ></a>
+          </div>
+          <div class="listing-toolbar">
+            <div
+              class="segmented"
+              id="home-status"
+              aria-label="Filter recent items by status"
+            >
+              <button class="selected" data-status="all" aria-pressed="true">
+                All items</button
+              ><button data-status="Lost" aria-pressed="false">
+                <span class="status-dot lost-dot"></span>Lost</button
+              ><button data-status="Found" aria-pressed="false">
+                <span class="status-dot found-dot"></span>Found</button
+              ><button data-status="Returned" aria-pressed="false">
+                Returned
+              </button>
+            </div>
+            <span class="updated-label"
+              ><span class="live-dot"></span> A community that looks out for
+              you</span
+            >
+          </div>
+          <div class="item-grid" id="recent-items"></div>
+        </section>
+        <section class="kindness-section">
+          <div class="container kindness-inner">
+            <span class="kindness-icon" data-icon="heart-handshake"></span>
+            <div>
+              <span class="eyebrow"
+                >FOUND SOMETHING? BE SOMEONE'S GOOD NEWS.</span
+              >
+              <h2>Not yours? You can still make a difference.</h2>
+              <p>
+                Report what you've found. Help a fellow student get back to
+                their day.
+              </p>
+            </div>
+            <a class="button primary" href="#found"
+              >Report a found item <span data-icon="arrow-right"></span
+            ></a>
+          </div>
+        </section>
+        <section class="container steps-section">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">A LITTLE LESS LOST</span>
+              <h2>Back in your hands. In three steps.</h2>
+            </div>
+          </div>
+          <div class="steps-grid">
+            <article>
+              <span class="step-number">01</span
+              ><span data-icon="clipboard-pen"></span>
+              <h3>Report it</h3>
+              <p>
+                Lost or found something? Share a few details with your campus.
+              </p>
+            </article>
+            <article>
+              <span class="step-number">02</span
+              ><span data-icon="scan-search"></span>
+              <h3>Make the connection</h3>
+              <p>
+                Browse reports and check the details to find a potential match.
+              </p>
+            </article>
+            <article>
+              <span class="step-number">03</span
+              ><span data-icon="heart-handshake"></span>
+              <h3>Bring it home</h3>
+              <p>
+                Get in touch, verify ownership, and arrange a safe campus
+                handover.
+              </p>
+            </article>
+          </div>
+        </section>
+      </section>
+      <section id="browse-view" class="view container page-section" hidden>
+        <div class="page-heading">
+          <span class="eyebrow">THE CAMPUS NOTICEBOARD</span>
+          <h1>Find a familiar thing<span class="heading-dot">.</span></h1>
+          <p>A lost item, a helpful stranger, a happy reunion.</p>
+        </div>
+        <div class="browse-filters">
+          <label class="search-field"
+            ><span data-icon="search"></span
+            ><input
+              id="browse-query"
+              type="search"
+              placeholder="Search name, description, or location"
+              aria-label="Search items" /></label
+          ><label
+            >Category<select id="category-filter">
+              <option value="all">All categories</option>
+              <option>ID Card</option>
+              <option>Electronics</option>
+              <option>Books</option>
+              <option>Accessories</option>
+              <option>Other</option>
+            </select></label
+          ><label
+            >Status<select id="status-filter">
+              <option value="all">All statuses</option>
+              <option>Lost</option>
+              <option>Found</option>
+              <option>Returned</option>
+            </select></label
+          ><button class="button secondary" id="clear-filters">
+            <span data-icon="rotate-ccw"></span> Reset
+          </button>
+        </div>
+        <div class="results-line">
+          <span id="results-count" role="status"></span
+          ><span>Most recent first</span>
+        </div>
+        <div class="item-grid" id="browse-items"></div>
+      </section>
+      <section id="report-view" class="view container page-section" hidden>
+        <a href="#browse" class="text-link back-link"
+          ><span data-icon="arrow-left"></span> Back to items</a
+        >
+        <div class="report-layout">
+          <aside>
+            <span class="eyebrow">LET'S RECONNECT</span>
+            <h1 id="report-title">Report a lost item.</h1>
+            <p id="report-subtitle"></p>
+            <div class="report-tips">
+              <span data-icon="shield-check"></span>
+              <h3>A little care goes a long way.</h3>
+              <p>
+                Keep unique identifying details private so you can verify
+                ownership. Never share passwords, full ID numbers, or home
+                addresses.
+              </p>
+              <p>
+                Meet in a public place on campus. For valuable items, arrange a
+                handover through campus security.
+              </p>
+            </div>
+          </aside>
+          <form id="report-form" class="report-form">
+            <div class="form-switch">
+              <a href="#lost" id="lost-tab">Lost an item</a
+              ><a href="#found" id="found-tab">Found an item</a>
+            </div>
+            <label
+              >Item name *<input
+                name="name"
+                maxlength="80"
+                required
+                placeholder="e.g. Blue wireless headphones"
+            /></label>
+            <div class="form-row">
+              <label
+                >Category *<select name="category" required>
+                  <option value="">Select a category</option>
+                  <option>ID Card</option>
+                  <option>Electronics</option>
+                  <option>Books</option>
+                  <option>Accessories</option>
+                  <option>Other</option>
+                </select></label
+              ><label
+                ><span id="date-label">Date lost *</span
+                ><input name="date" type="date" required
+              /></label>
+            </div>
+            <label
+              >Description *<textarea
+                name="description"
+                rows="4"
+                minlength="10"
+                maxlength="1000"
+                required
+                placeholder="Color, brand, or any details that might help..."
+              ></textarea></label
+            ><label
+              ><span id="location-label">Last seen location *</span
+              ><input
+                name="location"
+                required
+                maxlength="120"
+                placeholder="e.g. Central Library, second floor" /></label
+            ><label
+              >Contact information *<input
+                name="contact"
+                required
+                maxlength="160"
+                placeholder="Your college email or phone number"
+              /><small
+                >This will be visible in the report's details. Use a contact you
+                are comfortable sharing.</small
+              ></label
+            ><label id="image-field" hidden
+              >Item photo (optional)<input
+                name="image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+              /><small
+                >JPG, PNG, or WebP, up to 2 MB. Photos are resized before saving
+                to the database.</small
+              ></label
+            >
+            <p class="form-error" id="form-error" role="alert"></p>
+            <button class="button primary" type="submit">
+              <span data-icon="plus"></span
+              ><span id="submit-label">Submit report</span>
+            </button>
+            <p class="form-footnote">
+              <span data-icon="info"></span> Reports are stored in the local SQLite database.
+            </p>
+          </form>
+        </div>
+      </section>
+      <section id="about-view" class="view container page-section" hidden>
+        <span class="eyebrow">A CAMPUS THAT CARES</span>
+        <h1>Good things find their way back.</h1>
+        <p class="about-lead">
+          FindIt is a lost & found noticeboard for college students and staff. A
+          simple way to look out for your belongings, and each other.
+        </p>
+        <div class="about-grid">
+          <article>
+            <span data-icon="clipboard-pen"></span>
+            <h2>Share a report</h2>
+            <p>
+              Choose Report Lost Item or Report Found Item. Add a useful
+              description, category, location, date, and a contact method.
+            </p>
+            <a href="#lost" class="text-link"
+              >Report an item <span data-icon="arrow-right"></span
+            ></a>
+          </article>
+          <article>
+            <span data-icon="scan-search"></span>
+            <h2>Look for a match</h2>
+            <p>
+              Search the noticeboard and filter by category or status. Open an
+              item's details and contact the reporter directly.
+            </p>
+            <a href="#browse" class="text-link"
+              >Browse items <span data-icon="arrow-right"></span
+            ></a>
+          </article>
+          <article>
+            <span data-icon="shield-check"></span>
+            <h2>Return it safely</h2>
+            <p>
+              Confirm ownership with a detail not in the listing. Meet in a
+              public campus location, then mark the item as returned.
+            </p>
+          </article>
+        </div>
+        <div class="prototype-note">
+          <h2>About this prototype</h2>
+          <p>
+            Demonstration reports are included. Reports are saved in a SQLite
+            database on the server computer and are shared between browsers using
+            that server. This local-only prototype has no accounts, ownership
+            permissions, or college authentication. Anyone with access can update
+            a report. External photos and fonts require internet access.
+          </p>
+          <p>
+            The backend is written in C. It validates reports and uses prepared
+            SQL statements for registration, searching, category filters, status
+            updates, and statistics. JavaScript connects the interface to the C
+            server through an HTTP API. No WebAssembly is needed.
+          </p>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <div class="container footer-main">
+        <div>
+          <a href="#home" class="brand"
+            ><span class="brand-mark" data-icon="scan-search"></span>FindIt<span
+              class="brand-dot"
+              >.</span
+            ></a
+          >
+          <p>Lost things. Found connections.</p>
+        </div>
+        <div class="footer-links">
+          <a href="#browse">Browse items</a><a href="#lost">Report lost</a
+          ><a href="#found">Report found</a><a href="#about">About FindIt</a>
+        </div>
+        <span class="campus-only"
+          ><span data-icon="graduation-cap"></span> Exclusively for our
+          campus</span
+        >
+      </div>
+      <div class="container footer-bottom">
+        <span
+          >&copy; <span id="year"></span> FindIt. A campus community
+          initiative.</span
+        ><span>Student project &middot; C + SQLite</span>
+      </div>
+    </footer>
+    <dialog id="detail-dialog" aria-labelledby="detail-title">
+      <button
+        class="icon-button close-dialog"
+        id="close-dialog"
+        aria-label="Close item details"
+        title="Close item details"
+      >
+        <span data-icon="x"></span>
+      </button>
+      <div id="detail-content"></div>
+    </dialog>
+    <div id="toast" class="toast" role="status" hidden></div>
+  </body>
+</html>
