@@ -17,6 +17,8 @@
     />
     <link rel="stylesheet" href="style.css" />
     <script defer src="script.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
+    <script defer src="auth.js"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -52,12 +54,17 @@
           ><a href="#browse" data-nav="browse">Browse items</a
           ><a href="#about" data-nav="about">How it works</a>
         </nav>
+        <button id="open-login" class="button secondary" type="button">Log in</button>
         <a href="#lost" class="button primary nav-report"
           ><span data-icon="plus"></span> Report an item</a
         >
       </div>
     </header>
     <main id="main" tabindex="-1">
+      <section class="container auth-status-bar" aria-label="Login status">
+        <span id="auth-status" role="status">Connecting to email login...</span>
+        <button id="logout" class="detail-button" type="button" hidden>Log out</button>
+      </section>
       <div id="connection-notice" class="container connection-notice" role="alert" hidden>
         <span id="connection-message"></span>
         <button id="retry-connection" class="button secondary" type="button">Retry connection</button>
@@ -135,6 +142,61 @@
               </div>
             </div>
           </div>
+        </section>
+        <section class="container feature-hub" aria-labelledby="dashboard-title">
+          <div class="dashboard-panel">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">YOUR CAMPUS, YOUR WAY</span>
+                <h2 id="dashboard-title">
+                  Your dashboard<span class="heading-dot">.</span>
+                </h2>
+                <p>Choose what you want to see. Your choices stay in this browser.</p>
+              </div>
+            </div>
+            <div class="dashboard-controls">
+              <label
+                >Category<select id="personal-category">
+                  <option value="all">All categories</option>
+                  <option>ID Card</option>
+                  <option>Electronics</option>
+                  <option>Books</option>
+                  <option>Accessories</option>
+                  <option>Other</option>
+                </select></label
+              >
+              <label
+                >Show me<select id="personal-status">
+                  <option value="Found">Found items</option>
+                  <option value="Lost">Lost items</option>
+                  <option value="all">All activity</option>
+                </select></label
+              >
+            </div>
+            <div class="item-grid" id="personal-items" aria-live="polite"></div>
+          </div>
+          <aside class="rewards-panel" aria-labelledby="rewards-title">
+            <span class="rewards-icon" data-icon="award"></span>
+            <span class="eyebrow">KINDNESS COUNTS</span>
+            <h2 id="rewards-title">Your campus points</h2>
+            <p class="rewards-score"><strong id="reward-points">0</strong> demo points</p>
+            <p>Earn 10 points for a report and 20 for confirming a return.</p>
+            <ul id="badge-list" class="badge-list" aria-live="polite"></ul>
+            <small>Demo rewards are saved only in this browser. They are not verified.</small>
+          </aside>
+        </section>
+        <section class="container smart-matches-section" aria-labelledby="matches-title">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">A LITTLE HELP FINDING A MATCH</span>
+              <h2 id="matches-title">Smart match suggestions<span class="heading-dot">.</span></h2>
+              <p>
+                Suggestions compare category, shared keywords, and location.
+                They are a simple on-device heuristic—not an AI service or proof of ownership.
+              </p>
+            </div>
+          </div>
+          <div id="smart-matches" class="match-grid" aria-live="polite"></div>
         </section>
         <section class="container listings-section">
           <div class="section-heading">
@@ -337,8 +399,9 @@
                 maxlength="160"
                 placeholder="Your college email or phone number"
               /><small
-                >This will be visible in the report's details. Use a contact you
-                are comfortable sharing.</small
+                >Contact details can be read by anyone using this local demo server.
+                Use a contact you are comfortable sharing; never enter a password,
+                full ID number, or other sensitive information.</small
               ></label
             ><label id="image-field" hidden
               >Item photo (optional)<input
@@ -405,9 +468,10 @@
           <p>
             Demonstration reports are included. Reports are saved in a SQLite
             database on the server computer and are shared between browsers using
-            that server. This local-only prototype has no accounts, ownership
-            permissions, or college authentication. Anyone with access can update
-            a report. External photos and fonts require internet access.
+            that server. Supabase email OTP verifies your email, but this
+            prototype's report API does not enforce login or ownership
+            permissions. Anyone with server access can update a report.
+            Login, external photos, and fonts require internet access.
           </p>
           <p>
             The backend is written in C. It validates reports and uses prepared
@@ -455,6 +519,28 @@
         <span data-icon="x"></span>
       </button>
       <div id="detail-content"></div>
+    </dialog>
+    <dialog id="login-dialog" class="login-dialog" aria-labelledby="login-title">
+      <button id="close-login" class="icon-button close-dialog" type="button" aria-label="Close login">
+        <span data-icon="x"></span>
+      </button>
+      <h2 id="login-title">Welcome to FindIt</h2>
+      <p>Log in with a one-time code sent to your email. No password needed.</p>
+      <form id="login-email-form" class="login-form">
+        <label for="login-email">Email address</label>
+        <input id="login-email" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com" />
+        <button id="send-otp" class="button primary" type="submit" disabled>Send login code</button>
+      </form>
+      <form id="login-code-form" class="login-form" hidden>
+        <label for="login-code">Code from your email</label>
+        <input id="login-code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" minlength="6" maxlength="10" required />
+        <button id="verify-otp" class="button primary" type="submit">Verify and log in</button>
+        <button id="change-login-email" class="detail-button" type="button">Change email</button>
+        <button id="resend-otp" class="detail-button" type="button">Resend code</button>
+      </form>
+      <p id="login-message" role="status" aria-live="polite"></p>
+      <p id="login-error" class="form-error" role="alert"></p>
+      <p class="login-limits">Email login verifies your email only. This local demo's report API does not yet enforce accounts or ownership permissions.</p>
     </dialog>
     <div id="toast" class="toast" role="status" hidden></div>
   </body>

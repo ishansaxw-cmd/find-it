@@ -36,7 +36,7 @@ static int send_response(struct mg_connection *connection, int status, const cha
     mg_printf(connection, "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %lu\r\n"
         "Cache-Control: no-store\r\nConnection: close\r\nX-Content-Type-Options: nosniff\r\n"
         "Referrer-Policy: no-referrer\r\nX-Frame-Options: DENY\r\n"
-        "Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+        "Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https://images.unsplash.com; "
         "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'\r\n\r\n",
         status, mg_get_response_code_text(connection, status), type, (unsigned long)length);
@@ -71,10 +71,11 @@ static int serve_asset(struct mg_connection *connection, const char *path) {
     char *contents;
     long length;
     int result;
-    /* Serve only the three website files; database and C files stay private. */
+    /* Serve only website assets; database, environment, and C files stay private. */
     if (strcmp(path, "/") == 0 || strcmp(path, "/index.html") == 0) { file = "index.html"; type = "text/html; charset=utf-8"; }
     else if (strcmp(path, "/style.css") == 0) { file = "style.css"; type = "text/css; charset=utf-8"; }
     else if (strcmp(path, "/script.js") == 0) { file = "script.js"; type = "text/javascript; charset=utf-8"; }
+    else if (strcmp(path, "/auth.js") == 0) { file = "auth.js"; type = "text/javascript; charset=utf-8"; }
     else if (strcmp(path, "/favicon.ico") == 0) return send_response(connection, 204, "image/x-icon", "", 0);
     if (file == NULL) return send_error(connection, 404, "Not found.");
     stream = fopen(file, "rb");

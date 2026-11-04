@@ -43,6 +43,9 @@ let homeStatus = "all";
 let reportType = "Lost";
 let activeItemId = null;
 let toastTimer;
+let preferences = { category: "all", status: "Found" };
+let rewards = { points: 0, reports: 0, returnedIds: [] };
+let activeSpeechButton = null;
 const dialog = document.getElementById("detail-dialog");
 const reportForm = document.getElementById("report-form");
 
@@ -69,7 +72,7 @@ function notify(message) {
 
 async function apiRequest(endpoint, options = {}) {
   if (location.protocol === "file:") {
-    throw new Error("Open FindIt through the C server at http://127.0.0.1:8080, not as a file. Start it with .\\start.ps1.");
+    throw new Error("Run node start-ui.mjs and open http://127.0.0.1:3000. Report data also requires the C server.");
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
@@ -80,7 +83,7 @@ async function apiRequest(endpoint, options = {}) {
     return data;
   } catch (error) {
     if (error.name === "AbortError" || error instanceof TypeError) {
-      throw new Error("Cannot reach the C server. Start .\\start.ps1, then retry the connection.");
+      throw new Error("Cannot reach the report server. Start the C server, then retry the connection.");
     }
     throw error;
   } finally {
@@ -251,6 +254,223 @@ function renderCards(containerId, records) {
     container.append(empty);
   }
 }
+
+function renderPersonalDashboard() {
+  const container = document.getElementById("personal-items");
+  const records = [...items]
+    .filter(
+      (item) =>
+        (preferences.category === "all" ||
+          item.category === preferences.category) &&
+        (preferences.status === "all" || item.status === preferences.status),
+    )
+    .sort((first, second) => second.createdAt - first.createdAt)
+    .slice(0, 4);
+  container.replaceChildren();
+  if (!databaseReady || records.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "dashboard-empty";
+    empty.textContent = databaseReady
+      ? "No reports match these choices yet. Try another category or activity type."
+      : "Connect to the local noticeboard to see reports tailored to you.";
+    container.append(empty);
+    return;
+  }
+  container.append(...records.map(createCard));
+}
+
+const COMMON_WORDS = new Set([
+  "and", "are", "for", "from", "has", "have", "in", "into", "item",
+  "its", "near", "the", "this", "was", "with", "you",
+]);
+
+function tokens(value) {
+  return [
+    ...new Set(
+      (value.toLowerCase().match(/[a-z0-9]+/g) || []).filter(
+        (word) => word.length > 2 && !COMMON_WORDS.has(word),
+      ),
+    ),
+  ];
+}
+
+function sharedTokens(first, second) {
+  const secondWords = new Set(second);
+  return first.filter((word) => secondWords.has(word));
+}
+
+function findSmartMatches() {
+  const lostItems = items.filter((item) => item.status === "Lost");
+  const foundItems = items.filter((item) => item.status === "Found");
+  const matches = [];
+  for (const lost of lostItems) {
+    for (const found of foundItems) {
+      const sharedDescription = sharedTokens(
+        tokens(`${lost.name} ${lost.description}`),
+        tokens(`${found.name} ${found.description}`),
+      );
+      const sharedLocation = sharedTokens(
+        tokens(lost.location),
+        tokens(found.location),
+      );
+      if (sharedDescription.length === 0 && sharedLocation.length === 0) continue;
+      const score = Math.min(
+        100,
+        (lost.category === found.category ? 40 : 0) +
+          Math.min(sharedDescription.length, 4) * 12 +
+          Math.min(sharedLocation.length, 2) * 6,
+      );
+      if (score >= 24) matches.push({ lost, found, score });
+    }
+  }
+  return matches.sort((first, second) => second.score - first.score).slice(0, 3);
+}
+
+function renderSmartMatches() {
+  const container = document.getElementById("smart-matches");
+  container.replaceChildren();
+  if (!databaseReady) {
+    const empty = document.createElement("p");
+    empty.className = "dashboard-empty";
+    empty.textContent = "Connect to the local noticeboard to look for possible matches.";
+    container.append(empty);
+    return;
+  }
+  const matches = findSmartMatches();
+  if (matches.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "dashboard-empty";
+    empty.textContent =
+      "No likely pairs yet. New Lost and Found reports may create a match.";
+    container.append(empty);
+    return;
+  }
+  for (const match of matches) {
+    const card = document.createElement("article");
+    card.className = "match-card";
+    const score = document.createElement("span");
+    score.className = "match-score";
+    score.textContent = `Suggestion score: ${match.score}/100`;
+    const title = document.createElement("h3");
+    title.textContent = "These reports may be related";
+    const summary = document.createElement("p");
+    summary.className = "match-summary";
+    summary.textContent = `${match.lost.name} (Lost) · ${match.found.name} (Found)`;
+    const reason = document.createElement("p");
+    const reasons = [];
+    if (match.lost.category === match.found.category) reasons.push("same category");
+    const keywordCount = sharedTokens(
+      tokens(`${match.lost.name} ${match.lost.description}`),
+      tokens(`${match.found.name} ${match.found.description}`),
+    ).length;
+    if (keywordCount) reasons.push(`${keywordCount} shared keyword${keywordCount === 1 ? "" : "s"}`);
+    const locationCount = sharedTokens(
+      tokens(match.lost.location),
+      tokens(match.found.location),
+    ).length;
+    if (locationCount) reasons.push("similar location");
+    reason.textContent = reasons.join(" · ");
+    const actions = document.createElement("div");
+    actions.className = "match-actions";
+    for (const [label, item] of [
+      ["View Lost report", match.lost],
+      ["View Found report", match.found],
+    ]) {
+      const button = document.createElement("button");
+      button.className = "detail-button";
+      button.type = "button";
+      button.textContent = label;
+      button.addEventListener("click", () => showDetails(item.id));
+      actions.append(button);
+    }
+    card.append(score, title, summary, reason, actions);
+    container.append(card);
+  }
+}
+
+function renderRewards() {
+  document.getElementById("reward-points").textContent = rewards.points;
+  const badges = [
+    { label: "First report", unlocked: rewards.reports >= 1 },
+    { label: "Campus helper", unlocked: rewards.reports >= 3 },
+    { label: "Happy reunion", unlocked: rewards.returnedIds.length >= 1 },
+    { label: "Community champion", unlocked: rewards.points >= 50 },
+  ];
+  const list = document.getElementById("badge-list");
+  list.replaceChildren(
+    ...badges.map((badgeInfo) => {
+      const badge = document.createElement("li");
+      badge.className = badgeInfo.unlocked ? "unlocked" : "";
+      badge.textContent = `${badgeInfo.unlocked ? "★" : "○"} ${badgeInfo.label}`;
+      return badge;
+    }),
+  );
+}
+
+function saveFeatureState(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function loadFeatureState() {
+  try {
+    const saved = localStorage.getItem("findit.preferences.v1");
+    if (saved !== null) {
+      const parsed = JSON.parse(saved);
+      if (
+        !parsed ||
+        !["all", ...CATEGORIES].includes(parsed.category) ||
+        !["Found", "Lost", "all"].includes(parsed.status)
+      ) {
+        throw new Error("Saved dashboard choices are invalid.");
+      }
+      preferences = parsed;
+    }
+  } catch (error) {
+    notify(`Dashboard preferences could not be loaded: ${error.message}`);
+  }
+  try {
+    const saved = localStorage.getItem("findit.rewards.v1");
+    if (saved !== null) {
+      const parsed = JSON.parse(saved);
+      if (
+        !parsed ||
+        !Number.isSafeInteger(parsed.points) ||
+        parsed.points < 0 ||
+        !Number.isSafeInteger(parsed.reports) ||
+        parsed.reports < 0 ||
+        !Array.isArray(parsed.returnedIds) ||
+        !parsed.returnedIds.every((id) => typeof id === "string")
+      ) {
+        throw new Error("Saved reward data is invalid.");
+      }
+      rewards = parsed;
+    }
+  } catch (error) {
+    notify(`Demo rewards could not be loaded: ${error.message}`);
+  }
+  document.getElementById("personal-category").value = preferences.category;
+  document.getElementById("personal-status").value = preferences.status;
+  renderRewards();
+}
+
+function awardContribution(type, itemId = "") {
+  if (type === "return" && rewards.returnedIds.includes(itemId)) return true;
+  if (type === "report") {
+    rewards.reports += 1;
+    rewards.points += 10;
+  } else {
+    rewards.returnedIds.push(itemId);
+    rewards.points += 20;
+  }
+  renderRewards();
+  return saveFeatureState("findit.rewards.v1", rewards);
+}
+
 function render() {
   const ordered = [...items].sort(
     (first, second) => second.createdAt - first.createdAt,
@@ -262,6 +482,9 @@ function render() {
       .slice(0, 4),
   );
   renderCards("browse-items", databaseReady ? browseItems : []);
+  renderPersonalDashboard();
+  renderSmartMatches();
+  renderRewards();
   document.getElementById("results-count").textContent =
     databaseReady ? `${browseItems.length} ${browseItems.length === 1 ? "item" : "items"} on the noticeboard` : "Database not connected";
   for (const field of ["total", "found", "returned"]) {
@@ -352,29 +575,75 @@ function showDetails(id) {
     ["Category", item.category],
     ["Location", item.location],
     ["Date", formatDate(item.date)],
-    ["Contact", item.contact],
   ]) {
     const term = document.createElement("dt");
     term.textContent = label;
     const definition = document.createElement("dd");
     definition.textContent = value;
-    if (
-      label === "Contact" &&
-      !item.demo &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-    ) {
-      const contact = document.createElement("a");
-      contact.href = `mailto:${encodeURIComponent(value)}`;
-      contact.textContent = value;
-      definition.replaceChildren(contact);
-    }
     details.append(term, definition);
   }
+  const contactTerm = document.createElement("dt");
+  contactTerm.textContent = "Contact";
+  const contactDefinition = document.createElement("dd");
+  const revealNotice = document.createElement("span");
+  revealNotice.className = "contact-prompt";
+  revealNotice.textContent = "Reveal only if you are comfortable viewing shared contact details.";
+  const revealButton = document.createElement("button");
+  revealButton.className = "detail-button contact-reveal";
+  revealButton.type = "button";
+  revealButton.textContent = "Reveal contact";
+  revealButton.addEventListener("click", () => {
+    if (
+      !confirm(
+        "Safety reminder: this demo has no accounts, OTP, or access controls. Contact data is available from the local server to anyone who can reach it. Never share sensitive information. Continue?",
+      )
+    ) {
+      return;
+    }
+    if (!item.demo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.contact)) {
+      const contactLink = document.createElement("a");
+      contactLink.href = `mailto:${encodeURIComponent(item.contact)}`;
+      contactLink.textContent = item.contact;
+      contactDefinition.replaceChildren(contactLink);
+    } else {
+      contactDefinition.replaceChildren(document.createTextNode(item.contact));
+    }
+  });
+  contactDefinition.append(revealNotice, revealButton);
+  details.append(contactTerm, contactDefinition);
   const notice = document.createElement("p");
   notice.className = "detail-notice";
   notice.textContent =
     "Verify ownership privately. Arrange a handover at a public campus location or through campus security.";
-  info.append(badge(item.status), title, description, details, notice);
+  const readButton = document.createElement("button");
+  readButton.className = "button secondary read-aloud";
+  readButton.type = "button";
+  readButton.append(icon("volume-2"), document.createTextNode("Read details aloud"));
+  readButton.addEventListener("click", () => {
+    if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+      notify("Voice output is not available in this browser.");
+      return;
+    }
+    if (activeSpeechButton === readButton) {
+      stopSpeech();
+      return;
+    }
+    stopSpeech();
+    const utterance = new SpeechSynthesisUtterance(
+      `${item.name}. ${item.status}. ${item.category}. ${item.description}. Location: ${item.location}. Date: ${formatDate(item.date)}.`,
+    );
+    activeSpeechButton = readButton;
+    readButton.lastChild.textContent = "Stop reading";
+    utterance.onend = () => finishSpeech(readButton);
+    utterance.onerror = (event) => {
+      finishSpeech(readButton);
+      if (event.error !== "canceled" && event.error !== "interrupted") {
+        notify("Voice output could not read this report.");
+      }
+    };
+    window.speechSynthesis.speak(utterance);
+  });
+  info.append(badge(item.status), title, description, details, notice, readButton);
   if (item.status !== "Returned") {
     const button = document.createElement("button");
     button.className = "button primary";
@@ -400,8 +669,15 @@ function showDetails(id) {
           body: JSON.stringify({ status: "Returned" }),
         });
         dialog.close();
+        const pointsSaved = awardContribution("return", current.id);
         const refreshed = await reloadItems();
-        notify(refreshed ? "One less thing lost. Returned status saved to the database." : "Returned status was saved. Retry the connection to refresh the noticeboard.");
+        notify(
+          `${refreshed ? "One less thing lost. Returned status saved to the database." : "Returned status was saved. Retry the connection to refresh the noticeboard."} ${
+            pointsSaved
+              ? "You earned 20 demo points."
+              : "Browser storage could not save your demo points."
+          }`,
+        );
       } catch (error) {
         notify(`Item was not updated. ${error.message}`);
       } finally {
@@ -502,18 +778,25 @@ reportForm.addEventListener("submit", async (event) => {
     const file = reportForm.elements.image.files[0];
     const image =
       submittedType === "Found" && file ? await prepareImage(file) : "";
-    await apiRequest("/api/items", {
+    const savedItem = await apiRequest("/api/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...record, status: submittedType, image }),
     });
+    const pointsSaved = awardContribution("report", savedItem.id);
     reportForm.reset();
     document.getElementById("browse-query").value = "";
     document.getElementById("category-filter").value = "all";
     document.getElementById("status-filter").value = "all";
     const refreshed = await reloadItems();
     location.hash = "browse";
-    notify(refreshed ? "Your report is on the noticeboard. Saved to the SQLite database." : "Your report was saved. Retry the connection to refresh the noticeboard.");
+    notify(
+      `${refreshed ? "Your report is on the noticeboard. Saved to the SQLite database." : "Your report was saved. Retry the connection to refresh the noticeboard."} ${
+        pointsSaved
+          ? "You earned 10 demo points."
+          : "Browser storage could not save your demo points."
+      }`,
+    );
   } catch (error) {
     errorElement.textContent = error.message;
   } finally {
@@ -546,6 +829,20 @@ document.getElementById("browse-query").addEventListener("input", () => {
 });
 document.getElementById("category-filter").addEventListener("change", () => void reloadItems());
 document.getElementById("status-filter").addEventListener("change", () => void reloadItems());
+document.getElementById("personal-category").addEventListener("change", (event) => {
+  preferences.category = event.target.value;
+  if (!saveFeatureState("findit.preferences.v1", preferences)) {
+    notify("Dashboard preference changed for this session, but browser storage could not save it.");
+  }
+  renderPersonalDashboard();
+});
+document.getElementById("personal-status").addEventListener("change", (event) => {
+  preferences.status = event.target.value;
+  if (!saveFeatureState("findit.preferences.v1", preferences)) {
+    notify("Dashboard preference changed for this session, but browser storage could not save it.");
+  }
+  renderPersonalDashboard();
+});
 document.getElementById("clear-filters").addEventListener("click", () => {
   document.getElementById("browse-query").value = "";
   document.getElementById("category-filter").value = "all";
@@ -564,6 +861,19 @@ document.getElementById("menu-toggle").addEventListener("click", () => {
 document
   .getElementById("close-dialog")
   .addEventListener("click", () => dialog.close());
+function finishSpeech(button) {
+  if (activeSpeechButton !== button) return;
+  activeSpeechButton = null;
+  button.lastChild.textContent = "Read details aloud";
+}
+function stopSpeech() {
+  if (!activeSpeechButton) return;
+  const button = activeSpeechButton;
+  activeSpeechButton = null;
+  button.lastChild.textContent = "Read details aloud";
+  window.speechSynthesis.cancel();
+}
+dialog.addEventListener("close", stopSpeech);
 dialog.addEventListener("click", (event) => {
   if (event.target !== dialog) return;
   const bounds = dialog.getBoundingClientRect();
@@ -579,6 +889,7 @@ window.addEventListener("hashchange", route);
 document.getElementById("retry-connection").addEventListener("click", () => void reloadItems());
 window.addEventListener("focus", () => void reloadItems());
 document.getElementById("year").textContent = new Date().getFullYear();
+loadFeatureState();
 reportForm.querySelector('[type="submit"]').disabled = true;
 route();
 void reloadItems();

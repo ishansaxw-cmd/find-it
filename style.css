@@ -84,6 +84,40 @@ p {
   color: #76571d;
   font-size: 12px;
 }
+.auth-status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 12px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.login-dialog {
+  width: min(440px, calc(100% - 32px));
+  padding: 32px;
+}
+.login-dialog h2 {
+  margin: 15px 0;
+}
+.login-dialog > p {
+  margin-block: 12px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.login-form {
+  display: grid;
+  gap: 12px;
+  margin-block: 20px;
+}
+.login-form label {
+  font-size: 12px;
+  font-weight: 600;
+}
+.login-dialog .login-limits {
+  font-size: 10px;
+}
 .connection-notice > span {
   flex: 1 1 280px;
   overflow-wrap: anywhere;
@@ -422,6 +456,157 @@ nav a.active:after {
 .green {
   color: #319a7c;
   background: #eaf7f1;
+}
+.feature-hub {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 285px;
+  align-items: start;
+  gap: 28px;
+  padding-block: 48px;
+}
+.dashboard-panel,
+.rewards-panel,
+.match-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.dashboard-panel {
+  min-width: 0;
+  padding: 25px;
+}
+.dashboard-panel .section-heading {
+  margin-bottom: 20px;
+}
+.dashboard-panel .section-heading h2,
+.smart-matches-section .section-heading h2 {
+  font-size: 24px;
+}
+.dashboard-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.dashboard-controls label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+.dashboard-controls select {
+  min-width: 150px;
+}
+.dashboard-panel .item-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.dashboard-panel .item-visual {
+  aspect-ratio: 1.8;
+}
+.dashboard-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 20px;
+  border-radius: 5px;
+  background: var(--soft);
+  font-size: 12px;
+}
+.rewards-panel {
+  padding: 24px;
+  background: #f7f9ff;
+}
+.rewards-icon {
+  display: flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: #e7efff;
+  color: var(--blue);
+  font-size: 22px;
+}
+.rewards-panel .eyebrow {
+  font-size: 8px;
+  letter-spacing: 1.2px;
+}
+.rewards-panel h2 {
+  margin-top: 6px;
+  font-size: 20px;
+}
+.rewards-panel > p {
+  margin-top: 10px;
+  font-size: 11px;
+}
+.rewards-panel .rewards-score {
+  color: var(--ink);
+  font-size: 13px;
+}
+.rewards-score strong {
+  color: var(--blue);
+  font-family: var(--display);
+  font-size: 28px;
+}
+.badge-list {
+  display: grid;
+  gap: 7px;
+  margin: 18px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 10px;
+  color: var(--muted);
+}
+.badge-list .unlocked {
+  color: #276c51;
+  font-weight: 700;
+}
+.rewards-panel small {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.6;
+}
+.smart-matches-section {
+  padding-block: 15px 48px;
+}
+.match-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.match-card {
+  min-width: 0;
+  padding: 20px;
+  box-shadow: 0 3px 10px #10223b03;
+}
+.match-score {
+  color: var(--blue);
+  font-size: 10px;
+  font-weight: 700;
+}
+.match-card h3 {
+  margin-top: 9px;
+  font-size: 15px;
+}
+.match-card p {
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.match-summary {
+  margin-top: 10px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.match-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
 .stat strong {
   font-family: var(--display);
@@ -1096,6 +1281,15 @@ dialog::backdrop {
   margin: 0;
   overflow-wrap: anywhere;
 }
+.contact-prompt {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.contact-reveal {
+  display: inline-flex;
+}
 .detail-info dd a {
   color: var(--blue);
   text-decoration: underline;
@@ -1108,6 +1302,9 @@ dialog::backdrop {
 }
 .detail-info .button {
   width: 100%;
+}
+.detail-info .read-aloud {
+  margin-top: 10px;
 }
 .detail-demo {
   font-size: 10px;
@@ -1235,6 +1432,12 @@ body:has(dialog[open]) {
     padding-block: 23px;
     gap: 20px;
   }
+  .feature-hub {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .match-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .stats-intro {
     grid-column: 1/-1;
     display: flex;
@@ -1316,8 +1519,11 @@ body:has(dialog[open]) {
     display: none;
   }
   .nav-wrap {
-    height: 70px;
-    gap: 14px;
+    height: auto;
+    min-height: 70px;
+    flex-wrap: wrap;
+    padding-block: 12px;
+    gap: 10px;
   }
   .brand {
     font-size: 27px;
@@ -1345,7 +1551,7 @@ body:has(dialog[open]) {
   nav {
     display: none;
     position: absolute;
-    top: 70px;
+    top: 100%;
     left: 0;
     right: 0;
     background: white;
@@ -1453,6 +1659,24 @@ body:has(dialog[open]) {
   }
   .listings-section {
     padding-block: 35px;
+  }
+  .feature-hub {
+    padding-block: 30px;
+    gap: 16px;
+  }
+  .dashboard-panel {
+    padding: 17px;
+  }
+  .dashboard-panel .section-heading h2,
+  .smart-matches-section .section-heading h2 {
+    font-size: 21px;
+  }
+  .dashboard-panel .item-grid,
+  .match-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .smart-matches-section {
+    padding-block: 5px 30px;
   }
   .section-heading {
     align-items: flex-start;

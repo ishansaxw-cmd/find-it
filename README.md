@@ -1,22 +1,48 @@
-<<<<<<< HEAD
 # FindIt - Smart Campus Lost & Found
 
-A responsive student-project prototype using HTML5, CSS3, vanilla JavaScript, and a separate beginner-friendly C99 module. No frameworks, backend, accounts, or authentication.
+A student-project lost-and-found portal built with HTML, CSS, vanilla JavaScript, a C HTTP server, and SQLite. Supabase provides passwordless email OTP login. This is a local demo: report ownership and backend access control are not implemented.
 
-## Open the website
+## Run the app
 
-Open `index.html` in a current Chrome, Edge, Firefox, or Safari browser. No build step or development server is necessary. For more predictable storage behavior across browsers, an optional static server such as VS Code Live Server can also be used. File URLs and server URLs have separate local storage.
+### UI and email login (macOS, Windows, Linux)
 
-The home, browse, lost-report, found-report, and about views use hash navigation, so browser Back/Forward works. Eight clearly labeled demonstration reports are included on first launch.
+Install Node.js 20 or newer. From the project folder run:
 
-## Features
+```sh
+node start-ui.mjs
+```
+
+Open **http://127.0.0.1:3000** and click **Log in**. Enter an email,
+click **Send login code**, then enter the code and click **Verify and log in**.
+The session is restored after reload, automatically refreshed by the Supabase
+library, and cleared with **Log out**. Log out on shared computers.
+Do not open the HTML directly or use a generic static server: the UI launcher
+provides the public configuration endpoint while keeping `.env` private.
+
+Email login works without the C server. Reports need the C/SQLite server running
+separately on port 8080; the UI forwards report API requests to it. Without it,
+an explicit notice explains that reports are unavailable; OTP login still works.
+Set `PORT` or `FINDIT_BACKEND_PORT` environment variables to use different ports.
+
+### C report server (existing Windows setup)
+
+On Windows, install PowerShell and GCC, then run `.\start.ps1` in another terminal. The first build downloads the SQLite, cJSON, and CivetWeb source dependencies into `.build/`. The SQLite database is stored under `data/`. Continue using the UI on port 3000 for login; port 8080 is the report server. The existing PowerShell build is Windows-specific; compiling `c/demo.c` on macOS runs only the standalone example, not the HTTP/database server.
+
+The home, browse, lost-report, found-report, and about views use hash navigation. Demonstration reports are inserted when the database is first created.
+
+## Features, including the challenge additions
 
 - Required-field validation, description length limits, and no future report dates.
 - Lost and found reports, search across name/description/location/category, and category/status filters.
 - Item details, contact information, confirmation before marking returned, and dynamic statistics.
 - Optional found-item photo: JPEG, PNG, or WebP up to 2 MB, resized to at most 900 pixels before saving.
-- `localStorage` persistence under `findit.items.v1`. Storage errors are shown, never silently reported as a successful save.
-- Responsive navigation, keyboard-accessible native details dialog, empty states, reduced-motion support, and safe text rendering of submitted content.
+- **Smart match suggestions:** compares Lost and Found reports using category, shared keywords, and location. The score is a transparent browser-side heuristic, not a trained AI model.
+- **Personalized dashboard:** filters recent reports by a selected category and Lost/Found activity type. Preferences are saved in this browser.
+- **Voice output:** uses the browser's built-in speech synthesis to read report details aloud. Contact information is not spoken.
+- **Contact safety prompt:** asks before showing contact details and reminds users about safe handovers. This prompt does not restrict access to the underlying local API.
+- **Demo points and badges:** awards 10 points for a report and 20 for confirming a return. Progress is stored in this browser and is not identity-checked.
+- **Email OTP login:** Supabase sends and verifies email codes, restores sessions, and supports logout. Incorrect/expired codes and delivery failures are displayed. Code resends have a one-minute UI cooldown; Supabase enforces its own rate limits.
+- Responsive navigation, a keyboard-accessible native details dialog, empty states, reduced-motion support, and safe text rendering of submitted content.
 
 Statistics definitions: **reported** is all records, **found** is records originally reported Found (including those later returned), and **returned** is records currently Returned. Found and returned are not mutually exclusive totals.
 
@@ -24,49 +50,51 @@ Photos from Unsplash, Google Fonts (DM Sans and Manrope), and the Lucide icon fo
 
 ## Prototype limitations and privacy
 
-Reports exist only in this browser profile on this device. They are not shared with other students or devices, and deleting browser data removes them. There are no users, identity checks, ownership permissions, or college integration. Anyone using the browser can mark a report returned. Only publish contact details you are comfortable sharing; never publish full student ID numbers or sensitive information. Verify ownership and arrange a public campus handover.
+### Supabase configuration
 
-To restart with sample data, remove only the `findit.items.v1` entry in your browser's developer-tools Local Storage panel, then reload. This deletes your local reports.
+Copy `.env.example` to `.env` and set `SUPABASE_URL` and
+`SUPABASE_PUBLISHABLE_KEY`. The local `.env` file is ignored by Git.
+Only the browser-safe publishable key is needed for email OTP login; never add a
+Supabase secret/service-role key, Gmail app password, or database password to
+browser configuration.
+
+`node start-ui.mjs` reads these two values and exposes only them at
+`/api/public-config`. No secret key is used. It serves only an explicit list of
+website assets and never serves `.env`, source folders, or the database.
+Restart the UI launcher after changing configuration.
+
+In Supabase:
+
+1. Enable the Email provider and new user signups.
+2. Configure custom SMTP (sender, host, port, username, and app password/API key).
+   SMTP credentials go only in Supabase, never this project.
+3. In Emails -> Magic link or OTP, include `{{ .Token }}` in the email body.
+4. Ensure the email template uses a code, not just a confirmation link. The UI
+   accepts 6-10 numeric digits to accommodate the configured OTP length.
+5. Test using an inbox you control. Check spam and Supabase Auth logs for delivery
+   errors. The default sender has testing restrictions; use custom SMTP for
+   arbitrary student email addresses.
+
+The login library loads from jsDelivr and communicates directly with your
+Supabase project's HTTPS Auth service. Actual delivery depends on your project's
+SMTP settings, provider limits, and valid credentials.
+
+Reports are stored in the local SQLite database and shared with browsers that can reach this server. Dashboard preferences and demo rewards use browser `localStorage`. Supabase verifies login, but the C report API does not yet verify access tokens, associate reports with users, or enforce ownership. The contact prompt and login UI are not backend access controls. Do not enter passwords, full student ID numbers, or sensitive contact information in reports. Verify ownership privately and arrange a public campus handover.
 
 ## Files
 
-| File              | Purpose                                                                  |
-| ----------------- | ------------------------------------------------------------------------ |
-| `index.html`      | Semantic structure, navigation, report form, and views                   |
-| `style.css`       | Responsive navy/white interface and animations                           |
-| `script.js`       | Browser-only data processing, validation, storage, and rendering         |
-| `c/findit.h`      | Item structure and public C API                                          |
-| `c/findit.c`      | Fixed-array item processing, validation, search, filters, and statistics |
-| `c/demo.c`        | Standalone executable demonstration                                      |
-| `c/test_findit.c` | C assertion tests, including array and string bounds                     |
+| File         | Purpose                                          |
+| ------------ | ------------------------------------------------ |
+| `index.html` | Semantic structure, report form, and page views |
+| `style.css`  | Responsive visual design and feature components |
+| `script.js`  | API calls, matching, preferences, voice, and UI  |
+| `auth.js`    | Supabase OTP, session restoration, and logout   |
+| `start-ui.mjs` | Local UI, public config, and C API forwarding |
+| `c/`         | C server, SQLite persistence, and validation     |
+| `build.ps1`  | Build server and run the database tests          |
+| `start.ps1`  | Build (if needed) and start the local server     |
 
-## Compile and run the C module
+To run the backend/database tests on Windows, use `.\build.ps1 -Test`.
 
-With GCC installed, run from the project directory in PowerShell:
-
-```powershell
-gcc -std=c99 -Wall -Wextra -Werror -pedantic c/findit.c c/demo.c -o "$env:TEMP/findit-demo.exe"
-& "$env:TEMP/findit-demo.exe"
-gcc -std=c99 -Wall -Wextra -Werror -pedantic c/findit.c c/test_findit.c -o "$env:TEMP/findit-tests.exe"
-& "$env:TEMP/findit-tests.exe"
-```
-
-The C module uses structures, a static array of at most 100 records, strings, loops, functions, and conditionals. It has no heap allocation, file storage, browser calls, or networking. Its data resets when the process ends. Dates must be real ISO `YYYY-MM-DD` dates; unlike the browser's form, the C module does not compare them to today's date. Registration accepts Lost or Found; status updates also accept Returned.
-
-`add_item` returns a positive ID or -1 on invalid input/full capacity. Search and category filtering return the **total** matches but write only up to the supplied result capacity; iterate only `min(matches, capacity)` entries. A null result buffer with capacity zero counts matches without copying. `get_item` returns a read-only pointer or NULL, valid until reset. `calculate_statistics` fills an `ItemStatistics` structure.
-
-## Future WebAssembly integration
-
-**JavaScript does not execute this C module.** The current browser prototype and C program are independent implementations. The C module has no `main` and its string/integer public API can later be compiled with Emscripten. An example future build, after installing the Emscripten SDK, is:
-
-```text
-emcc c/findit.c -O2 --no-entry -s MODULARIZE=1 -s EXPORT_NAME=FindItCore -s EXPORTED_FUNCTIONS="['_reset_items','_get_item_count','_get_item','_add_item','_search_items','_filter_by_category','_update_item_status','_calculate_statistics','_malloc','_free']" -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap','UTF8ToString','getValue']" -o findit-core.js
-```
-
-This command is a future integration example, not a required setup step or a tested WebAssembly build. A future adapter must load the generated module over HTTP, encode strings, allocate result/statistics buffers, read C structures from linear memory, free temporary buffers, and deliberately synchronize persistence. It must also decide whether the C 100-record limit should apply to the portal and add image metadata separately. C pointers are not JavaScript objects. No generated WASM loader is included or referenced by the website.
-
-
-// "C:\Users\91828\OneDrive\Desktop\News Website\start.ps1" -SkipBuild -Port 8080
-=======
-# find-it
->>>>>>> 61405373fa59d18c17b82cf747eb3e7f01600337
+To check the UI launcher, public configuration, private-file isolation, and
+disconnected-backend handling, run `node --test tests/start-ui.test.mjs`.
